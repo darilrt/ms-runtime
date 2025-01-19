@@ -218,10 +218,10 @@ impl<'a> VirtualMachine {
 
                     match (a, b) {
                         (Value::Integer(a), Value::Integer(b)) => {
-                            self.stack.push(Value::Integer(a - b));
+                            self.stack.push(Value::Integer(b - a));
                         }
                         (Value::Float(a), Value::Float(b)) => {
-                            self.stack.push(Value::Float(a - b));
+                            self.stack.push(Value::Float(b - a));
                         }
                         _ => {
                             panic!("Invalid types");

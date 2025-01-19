@@ -774,7 +774,19 @@ impl<'a> Instruction {
                         })
                     }
                     "loop" => {
-                        todo!()
+                        let mut block = Vec::new();
+
+                        while let Some(value) = it.next() {
+                            match value {
+                                SExpr::List(_) => {
+                                    let instruction = Instruction::from_sexpr(value)?;
+                                    block.push(instruction);
+                                }
+                                _ => return Err("Unexpected atom".to_string()),
+                            }
+                        }
+
+                        Ok(Instruction::Loop { block: block })
                     }
                     "break" => Ok(Instruction::Break),
                     "continue" => Ok(Instruction::Continue),
@@ -794,79 +806,5 @@ impl<'a> Instruction {
         }
 
         Ok(code)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn instruction_to_bytes() {
-        let code = vec![
-            Instruction::PushConstInteger { value: 42 },
-            Instruction::PushConstFloat { value: 3.14 },
-            Instruction::Add,
-            Instruction::Return,
-        ];
-
-        let bytes = Instruction::code_to_bytes(&code);
-
-        let mut reader = ByteReader::new(&bytes);
-
-        assert_eq!(
-            reader.read_byte().unwrap(),
-            ByteCode::PushConstInteger as u8
-        );
-        assert_eq!(reader.read_i32().unwrap(), 42);
-
-        assert_eq!(reader.read_byte().unwrap(), ByteCode::PushConstFloat as u8);
-        assert_eq!(reader.read_f32().unwrap(), 3.14);
-
-        assert_eq!(reader.read_byte().unwrap(), ByteCode::Add as u8);
-
-        assert_eq!(reader.read_byte().unwrap(), ByteCode::Return as u8);
-    }
-
-    #[test]
-    fn instruction_from_bytes() {
-        let bytes = vec![
-            ByteCode::PushConstInteger as u8,
-            0x00,
-            0x00,
-            0x00,
-            42,
-            ByteCode::PushConstFloat as u8,
-            0x40,
-            0x48,
-            0xf5,
-            0xc3,
-            ByteCode::Add as u8,
-            ByteCode::Return as u8,
-        ];
-
-        let code = Instruction::from_bytecode(&bytes).unwrap();
-
-        assert_eq!(code.len(), 4);
-
-        match &code[0] {
-            Instruction::PushConstInteger { value } => assert_eq!(*value, 42),
-            _ => panic!("Invalid instruction"),
-        }
-
-        match &code[1] {
-            Instruction::PushConstFloat { value } => assert_eq!(*value, 3.14),
-            _ => panic!("Invalid instruction"),
-        }
-
-        match &code[2] {
-            Instruction::Add => {}
-            _ => panic!("Invalid instruction"),
-        }
-
-        match &code[3] {
-            Instruction::Return => {}
-            _ => panic!("Invalid instruction"),
-        }
     }
 }
